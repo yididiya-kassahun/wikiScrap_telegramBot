@@ -1,4 +1,6 @@
 const puppeteer = require('puppeteer');
+const telegramBot = require("node-telegram-bot-api");
+require("dotenv").config();
 
 async function run(){
 
