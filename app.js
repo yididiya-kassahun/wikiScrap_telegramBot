@@ -19,10 +19,9 @@ async function run(searchInput) {
 
   await page.focus('input[name="search"]');
   await page.keyboard.type(searchInput);
-
   await page.keyboard.press("Enter");
 
-  await page.waitForNavigation({ waitUntil: "networkidle2" });
+  await page.waitForNavigation({ waitUntil: "networkidle0" });
 
   console.log("Search done successfully!");
 
@@ -69,13 +68,20 @@ bot.onText(/search/, async (msg) => {
     searchInput.message_id,
     async (userSearch) => {
       console.log(userSearch.text);
-      userSearchResult = msg.chat.id;
+      userSearchResult = `${msg.chat.id}_${Math.round(Math.random())}`;
       run(userSearch.text);
 
       bot.sendMessage(msg.chat.id, "Searching the file ...\n\n ");
       let userFile = __dirname + `/files/${userSearchResult}.pdf`;
       console.log('generated pdf '+userFile);
-      bot.sendDocument(msg.chat.id, userFile);
+
+      const pdfFile = () => {
+        setTimeout(function () {
+          //  await setTimeout(7000);
+            bot.sendDocument(msg.chat.id, userFile);
+        }, 7000);
+    }
+    pdfFile();
     }
   );
 });
