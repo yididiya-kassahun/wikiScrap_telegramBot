@@ -1,29 +1,89 @@
-const puppeteer = require('puppeteer');
-const telegramBot = require("node-telegram-bot-api");
-require("dotenv").config();
+const puppeteer = require("puppeteer");
+const TelegramBot = require("node-telegram-bot-api");
 
-async function run(){
+const TOKEN =
+  process.env.TELEGRAM_TOKEN ||
+  "6549917923:AAEXonaUQcIVMVlRyGZclsaUX84r6C92ZFI";
 
-    const browser = await puppeteer.launch({headless:true});
-    const page = await browser.newPage();
+let userSearchResult = "";
 
-   // await page.pdf({path: 'wiki.pdf',format:'A4'});
+//const userFile = __dirname + `/files/${userSearchResult}.png`;
 
-   await page.goto('https://www.wikipedia.org');
+async function run(searchInput) {
+  const browser = await puppeteer.launch({ headless: true });
+  const page = await browser.newPage();
 
-   // await page.type('input[name=search]', 'Adenosine triphosphate');
-    await page.focus('input[name="search"]');
-    await page.keyboard.type('ethiopia');
+  // await page.pdf({path: 'wiki.pdf',format:'A4'});
 
-   await page.keyboard.press('Enter');
+  await page.goto("https://www.wikipedia.org");
 
-   await page.waitForNavigation({waitUntil:'networkidle2'});
+  await page.focus('input[name="search"]');
+  await page.keyboard.type(searchInput);
 
-   console.log("Search done successfully!");
-   
-   await page.screenshot({path: 'wiki.png',fullPage:true});
+  await page.keyboard.press("Enter");
 
-    await browser.close();
+  await page.waitForNavigation({ waitUntil: "networkidle2" });
+
+  console.log("Search done successfully!");
+
+  await page.pdf({ path: `files/${userSearchResult}.pdf`, format: "A4" });
+
+  await browser.close();
 }
 
-run();
+// ************* Bot
+const bot = new TelegramBot(TOKEN, { polling: true });
+
+function startMenu(msg) {
+  const opts = {
+    reply_markup: JSON.stringify({
+      keyboard: [
+        [{ text: "🔎 search " }, { text: "👨🏽‍💻 developer" }],
+        [{ text: "Back" }],
+      ],
+      resize_keyboard: true,
+      one_time_keyboard: true,
+    }),
+  };
+  bot.sendMessage(msg.chat.id, " start menu ", opts);
+}
+
+bot.onText(/start/, (msg) => {
+  console.log("=============" + msg.chat.id);
+  startMenu(msg);
+});
+
+bot.onText(/search/, async (msg) => {
+  const searchInput = await bot.sendMessage(
+    msg.chat.id,
+    "Enter your search query and i'll give you the wikipedia file in pdf\n\n ",
+    {
+      reply_markup: {
+        force_reply: true,
+      },
+    }
+  );
+
+  bot.onReplyToMessage(
+    msg.chat.id,
+    searchInput.message_id,
+    async (userSearch) => {
+      console.log(userSearch.text);
+      userSearchResult = msg.chat.id;
+      run(userSearch.text);
+
+      bot.sendMessage(msg.chat.id, "Searching the file ...\n\n ");
+      let userFile = __dirname + `/files/${userSearchResult}.pdf`;
+      console.log('generated pdf '+userFile);
+      bot.sendDocument(msg.chat.id, userFile);
+    }
+  );
+});
+
+bot.onText(/developer/, (msg) => {
+  bot.sendMessage(msg.chat.id, "Developed By: Yididiya Kassahun\n\n ");
+});
+
+bot.onText(/back/, (msg) => {
+  startMenu(msg);
+});
