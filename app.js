@@ -5,8 +5,6 @@ async function run(){
     const browser = await puppeteer.launch({headless:true});
     const page = await browser.newPage();
 
-   // await page.screenshot({path: 'wiki.png'});
-   // await page.screenshot({path: 'wiki.png',fullPage:true});
    // await page.pdf({path: 'wiki.pdf',format:'A4'});
 
    await page.goto('https://www.wikipedia.org');
