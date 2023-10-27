@@ -5,15 +5,9 @@ const TOKEN =
   process.env.TELEGRAM_TOKEN ||
   "6549917923:AAEXonaUQcIVMVlRyGZclsaUX84r6C92ZFI";
 
-let userSearchResult = "";
-
-//const userFile = __dirname + `/files/${userSearchResult}.png`;
-
 async function run(searchInput) {
   const browser = await puppeteer.launch({ headless: true });
   const page = await browser.newPage();
-
-  // await page.pdf({path: 'wiki.pdf',format:'A4'});
 
   await page.goto("https://www.wikipedia.org");
 
@@ -25,9 +19,11 @@ async function run(searchInput) {
 
   console.log("Search done successfully!");
 
-  await page.pdf({ path: `files/${userSearchResult}.pdf`, format: "A4" });
+ const pdfFile = await page.pdf({ path: `files/${searchInput}.pdf`, format: "A4" });
 
   await browser.close();
+
+  return pdfFile;
 }
 
 // ************* Bot
@@ -48,7 +44,7 @@ function startMenu(msg) {
 }
 
 bot.onText(/start/, (msg) => {
-  console.log("=============" + msg.chat.id);
+  console.log("=============" + msg.chat.first_name);
   startMenu(msg);
 });
 
@@ -63,25 +59,24 @@ bot.onText(/search/, async (msg) => {
     }
   );
 
-  bot.onReplyToMessage(
+ bot.onReplyToMessage(
     msg.chat.id,
     searchInput.message_id,
-    async (userSearch) => {
-      console.log(userSearch.text);
+     (userSearch) => {
+    //  console.log(userSearch.text);
       userSearchResult = `${msg.chat.id}_${Math.round(Math.random())}`;
-      run(userSearch.text);
 
-      bot.sendMessage(msg.chat.id, "Searching the file ...\n\n ");
-      let userFile = __dirname + `/files/${userSearchResult}.pdf`;
-      console.log('generated pdf '+userFile);
+     const resultFile = run(userSearch.text);
+     resultFile.then(res=>{
+      let userFile = __dirname + `/files/${userSearch.text}.pdf`;
+      bot.sendDocument(msg.chat.id, userFile);
+        }).catch(err=>{
+          console.log(err);
+          bot.sendMessage(msg.chat.id, "Oops! server side error occured! Try again");
+        });
 
-      const pdfFile = () => {
-        setTimeout(function () {
-          //  await setTimeout(7000);
-            bot.sendDocument(msg.chat.id, userFile);
-        }, 7000);
-    }
-    pdfFile();
+        bot.sendMessage(msg.chat.id, "Searching the file 📑 please wait a few seconds ⏳ ...\n\n ");
+
     }
   );
 });
